@@ -2,8 +2,11 @@ import React from "react";
 import "./App.css"; // optional for styling if needed
 
 // then paste your full code here
-import React, { useState, useEffect } from "react";
-import "./App.css"; // optional for styling
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const ASSET_PAIRS = [
   { symbol: "XAUUSD", contractSize: 100, pip: 0.1, tick: 0.01 },
@@ -33,7 +36,7 @@ const ASSET_PAIRS = [
   { symbol: "XPDUSD", contractSize: 100, pip: 0.1, tick: 0.01 }
 ];
 
-export default function App() {
+export default function RiskCalculator() {
   const [assetPair, setAssetPair] = useState(() => localStorage.getItem('assetPair') || "XAUUSD");
   const [entry, setEntry] = useState(() => {
     const stored = localStorage.getItem('entry');
@@ -138,37 +141,158 @@ export default function App() {
     const margin = notional / leverage;
     const profit = tpPoints * valuePerPoint * lotSize;
 
-    setResults({
-      mode, tpPoints, slPoints, tpTicks, tpPips,
-      slTicks, slPips, lotSize, profit,
-      riskUsd, riskAmount, margin
+    setResults({ mode, tpPoints, slPoints, tpTicks, tpPips, slTicks, slPips,
+      lotSize, profit, riskUsd, riskAmount, margin
     });
   };
-
   return (
-    <div style={{ maxWidth: 600, margin: "0 auto", padding: 16 }}>
-      <h2>Risk Calculator</h2>
+    <div className="max-w-xl mx-auto p-4 bg-white">
+      <Tabs defaultValue="risk" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="risk">By Risk %</TabsTrigger>
+          <TabsTrigger value="lot">By Lot Size</TabsTrigger>
+        </TabsList>
 
-      {/* Add your form UI and calculation result rendering here */}
+        <TabsContent value="risk">
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="text-sm text-gray-600">Asset Pair</label>
+              <select value={assetPair} onChange={e => setAssetPair(e.target.value)} className="border rounded p-2 w-full">
+                {ASSET_PAIRS.map(p => <option key={p.symbol} value={p.symbol}>{p.symbol}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Entry Price</label>
+              <Input type="number" step={current.pip} value={entry} onChange={e => setEntry(parseFloat(e.target.value))} className={errors.entry ? 'border-red-500' : ''} />
+              {errors.entry && <p className="text-red-500 text-xs mt-1">Value required</p>}
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Take Profit (TP)</label>
+              <Input type="number" step={current.pip} value={tp} onChange={e => setTP(parseFloat(e.target.value))} className={errors.tp ? 'border-red-500' : ''} />
+              {errors.tp && <p className="text-red-500 text-xs mt-1">Value required</p>}
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Stop Loss (SL)</label>
+              <Input type="number" step={current.pip} value={sl} onChange={e => setSL(parseFloat(e.target.value))} className={errors.sl ? 'border-red-500' : ''} />
+              {errors.sl && <p className="text-red-500 text-xs mt-1">Value required</p>}
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Account Balance (USD)</label>
+              <Input type="number" step="0.01" value={balance} onChange={e => setBalance(parseFloat(e.target.value))} className={errors.balance ? 'border-red-500' : ''} />
+              {errors.balance && <p className="text-red-500 text-xs mt-1">Value required</p>}
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Risk Percentage (%)</label>
+              <Input type="number" step="0.1" value={riskPercent} onChange={e => setRiskPercent(parseFloat(e.target.value))} />
+              {errors.riskPercent && <p className="text-red-500 text-xs mt-1">Value required</p>}
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Leverage</label>
+              <Input type="number" step="1" value={leverage} onChange={e => setLeverage(parseFloat(e.target.value))} className={errors.leverage ? 'border-red-500' : ''} />
+              {errors.leverage && <p className="text-red-500 text-xs mt-1">Value required</p>}
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button onClick={() => calculate('risk')} className="w-full">Calculate Risk</Button>
+            <Button onClick={() => setShowResetModal(true)} className="w-full mt-2 bg-gray-100 text-gray-700">Reset Form</Button>
+          </div>
+        </TabsContent>
 
-      {showResetModal && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: "rgba(0,0,0,0.5)", display: "flex",
-          justifyContent: "center", alignItems: "center"
-        }}>
-          <div style={{
-            backgroundColor: "white", padding: 24,
-            borderRadius: 8, maxWidth: 300
-          }}>
-            <p>Are you sure you want to reset the form?</p>
-            <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-              <button onClick={() => { resetFormConfirmed(); setShowResetModal(false); }}>
-                Yes, Reset
-              </button>
-              <button onClick={() => setShowResetModal(false)}>
-                Cancel
-              </button>
+        <TabsContent value="lot">
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="text-sm text-gray-600">Asset Pair</label>
+              <select value={assetPair} onChange={e => setAssetPair(e.target.value)} className="border rounded p-2 w-full">
+                {ASSET_PAIRS.map(p => <option key={p.symbol} value={p.symbol}>{p.symbol}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Entry Price</label>
+              <Input type="number" step={current.pip} value={entry} onChange={e => setEntry(parseFloat(e.target.value))} className={errors.entry ? 'border-red-500' : ''} />
+              {errors.entry && <p className="text-red-500 text-xs mt-1">Value required</p>}
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Take Profit (TP)</label>
+              <Input type="number" step={current.pip} value={tp} onChange={e => setTP(parseFloat(e.target.value))} className={errors.tp ? 'border-red-500' : ''} />
+              {errors.tp && <p className="text-red-500 text-xs mt-1">Value required</p>}
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Stop Loss (SL)</label>
+              <Input type="number" step={current.pip} value={sl} onChange={e => setSL(parseFloat(e.target.value))} className={errors.sl ? 'border-red-500' : ''} />
+              {errors.sl && <p className="text-red-500 text-xs mt-1">Value required</p>}
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Account Balance (USD)</label>
+              <Input type="number" step="0.01" value={balance} onChange={e => setBalance(parseFloat(e.target.value))} className={errors.balance ? 'border-red-500' : ''} />
+              {errors.balance && <p className="text-red-500 text-xs mt-1">Value required</p>}
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Manual Lot Size</label>
+              <Input type="number" step="0.01" value={manualLotSize} onChange={e => setManualLotSize(parseFloat(e.target.value))} className={errors.manualLotSize ? 'border-red-500' : ''} />
+              {errors.manualLotSize && <p className="text-red-500 text-xs mt-1">Value required</p>}
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Leverage</label>
+              <Input type="number" step="1" value={leverage} onChange={e => setLeverage(parseFloat(e.target.value))} className={errors.leverage ? 'border-red-500' : ''} />
+              {errors.leverage && <p className="text-red-500 text-xs mt-1">Value required</p>}
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button onClick={() => calculate('lot')} className="w-full">Calculate Risk</Button>
+            <Button onClick={() => setShowResetModal(true)} className="w-full mt-2 bg-gray-100 text-gray-700">Reset Form</Button>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {results && (
+        <>
+          <Card className="bg-blue-50 mt-6">
+            <CardContent className="space-y-2 text-sm">
+              <div className="pt-2"><strong>Asset Pair:</strong> {assetPair}</div>
+              <div><strong>TP:</strong> {results.tpPips.toFixed(1)} pips / {results.tpTicks.toFixed(0)} ticks</div>
+              <div><strong>SL:</strong> {results.slPips.toFixed(1)} pips / {results.slTicks.toFixed(0)} ticks</div>
+              <div><strong>Risk Amount:</strong> ${results.riskUsd.toFixed(2)} ({((results.riskUsd / balance) * 100).toFixed(2)}%)</div>
+              <div><strong>Lot Size Used:</strong> {results.lotSize.toFixed(5)} lots</div>
+              <div><strong>Potential Profit:</strong> ${results.profit.toFixed(2)}</div>
+              <div><strong>Required Margin:</strong> ${results.margin.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-50 mt-4">
+            <CardContent className="pt-4 text-sm space-y-2">
+              <div className="italic text-gray-700">
+                Calculations for {assetPair}. Tick size = {current.tick}, pip size = {current.pip}.<br />
+                Tick size is the minimum price movement of a trading instrument, and pip size is the standard unit of movement used to measure changes in value.
+              </div>
+              <div><strong>Entry:</strong> {entry}</div>
+              <div><strong>TP Points:</strong> |Entry - TP| = |{entry} - {tp}| = {results.tpPoints.toFixed(2)}</div>
+              <div><strong>TP Ticks:</strong> TP Points / Tick = {results.tpPoints.toFixed(2)} / {current.tick} = {results.tpTicks.toFixed(0)}</div>
+              <div><strong>TP Pips:</strong> TP Points / Pip Size = {results.tpPoints.toFixed(2)} / {current.pip} = {results.tpPips.toFixed(1)}</div>
+              <div><strong>SL Points:</strong> |SL - Entry| = |{sl} - {entry}| = {results.slPoints.toFixed(2)}</div>
+              <div><strong>SL Ticks:</strong> SL Points / Tick = {results.slPoints.toFixed(2)} / {current.tick} = {results.slTicks.toFixed(0)}</div>
+              <div><strong>SL Pips:</strong> SL Points / Pip Size = {results.slPoints.toFixed(2)} / {current.pip} = {results.slPips.toFixed(1)}</div>
+              {results.mode === 'risk' ? (
+                <>
+                  <div><strong>Risk Amount %:</strong> (Risk % / 100) × Balance = ({riskPercent} / 100) × {balance} = ${results.riskAmount.toFixed(2)}</div>
+                  <div><strong>Lot Size:</strong> Risk Amount / (SL Points × Contract Size) = {results.riskAmount.toFixed(2)} / ({results.slPoints.toFixed(2)} × {current.contractSize}) = {results.lotSize.toFixed(5)}</div>
+                </>
+              ) : (
+                <div><strong>Risk Amount:</strong> SL Points × Contract Size × Lot Size = {results.slPoints.toFixed(2)} × {current.contractSize} × {results.lotSize.toFixed(5)} = ${results.riskAmount.toFixed(2)}</div>
+              )}
+              <div><strong>Notional Value:</strong> Entry × Contract Size × Lot Size = {entry} × {current.contractSize} × {results.lotSize.toFixed(5)} = {(entry * current.contractSize * results.lotSize).toFixed(2)}</div>
+              <div><strong>Margin:</strong> Notional / Leverage = {(entry * current.contractSize * results.lotSize).toFixed(2)} / {leverage} = ${results.margin.toFixed(2)}</div>
+              <div><strong>Profit:</strong> TP Points × Contract Size × Lot Size = {results.tpPoints.toFixed(2)} × {current.contractSize} × {results.lotSize.toFixed(5)} = ${results.profit.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+    {showResetModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow max-w-sm w-full text-center">
+            <p className="mb-4">Are you sure you want to reset the form?</p>
+            <div className="flex justify-between gap-4">
+              <Button onClick={() => { resetFormConfirmed(); setShowResetModal(false); }} className="flex-1">Yes, Reset</Button>
+              <Button onClick={() => setShowResetModal(false)} className="flex-1 bg-gray-200 text-gray-800">Cancel</Button>
             </div>
           </div>
         </div>
